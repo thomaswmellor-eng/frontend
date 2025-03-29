@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Tabs, Tab, Badge } from 'react-bootstrap';
 import FileUpload from '../components/FileUpload';
 import EmailPreview from '../components/EmailPreview';
-import axios from 'axios';
+import { emailService } from '../services/api';
 import { UserContext } from '../contexts/UserContext';
 
 const GenerateEmailsPage = () => {
@@ -32,7 +32,7 @@ const GenerateEmailsPage = () => {
   // Load templates from the backend
   const loadTemplates = async () => {
     try {
-      const response = await axios.get('/api/templates');
+      const response = await emailService.getTemplates();
       setTemplates(response.data);
       if (response.data.length > 0) {
         const defaultTemplate = response.data.find(t => t.is_default);
@@ -49,9 +49,9 @@ const GenerateEmailsPage = () => {
     setLoadingEmails(true);
     try {
       const [outreach, followup, lastChance] = await Promise.all([
-        axios.get('/api/emails/by-stage/outreach'),
-        axios.get('/api/emails/by-stage/followup'),
-        axios.get('/api/emails/by-stage/lastchance')
+        emailService.getEmailsByStage('outreach'),
+        emailService.getEmailsByStage('followup'),
+        emailService.getEmailsByStage('lastchance')
       ]);
       
       setOutreachEmails(outreach.data || []);
@@ -105,11 +105,7 @@ const GenerateEmailsPage = () => {
     }
 
     try {
-      const response = await axios.post('/api/emails/generate', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await emailService.generateEmails(formData);
       
       setEmails(response.data.emails || []);
       setActiveTab('preview');
@@ -153,7 +149,7 @@ const GenerateEmailsPage = () => {
   // Marquer un email comme envoyé
   const handleMarkAsSent = async (emailId, stage) => {
     try {
-      await axios.put(`/api/emails/${emailId}/status`, { status: 'sent' });
+      await emailService.updateEmailStatus(emailId, { status: 'sent' });
       // Recharger les emails après
       loadEmailsByStage();
     } catch (err) {
@@ -175,7 +171,7 @@ const GenerateEmailsPage = () => {
     }
     
     try {
-      await axios.put(`/api/emails/${emailId}/stage`, { stage: nextStage });
+      await emailService.updateEmailStage(emailId, { stage: nextStage });
       // Recharger les emails après
       loadEmailsByStage();
     } catch (err) {
