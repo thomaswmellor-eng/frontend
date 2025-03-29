@@ -16,15 +16,15 @@ const HomePage = () => {
           
           {/* Video Section - Small Format */}
           <div className="video-container mb-4" style={{ maxWidth: '500px', margin: '0 auto' }}>
-            <video 
-              controls
-              poster="/video-thumbnail.jpg"
-              preload="metadata"
-              className="w-100"
-            >
-              <source src="/explications.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+            <iframe
+              width="100%"
+              height="315"
+              src="https://www.youtube.com/embed/-jyEi7-fAaw"
+              title="Tutoriel vidéo"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
           </div>
           
           <Button 
