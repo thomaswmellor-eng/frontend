@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Button, Offcanvas, Form, ListGroup, Badge, Spinner } from 'react-bootstrap';
 import { FaUserFriends, FaUserPlus, FaCheck, FaTimes, FaToggleOn, FaToggleOff } from 'react-icons/fa';
-import { 
-  getFriends, 
-  sendFriendRequest, 
-  acceptFriendRequest, 
-  rejectFriendRequest, 
-  removeFriend, 
-  toggleFriendSharing 
-} from '../services/emailApi';
+import axios from 'axios';
+import { UserContext } from '../contexts/UserContext';
 import '../styles/FriendsButton.css';
 
+// URL de base de l'API
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 const FriendsButton = () => {
+  const { userProfile, authenticated } = useContext(UserContext);
+  
   // State for button and side panel
   const [show, setShow] = useState(false);
   const [activeTab, setActiveTab] = useState('friends'); // 'friends', 'requests', 'add'
@@ -32,6 +31,7 @@ const FriendsButton = () => {
   
   // Open side panel
   const handleShow = () => {
+    if (!authenticated) return;
     setShow(true);
     loadFriendsData();
   };
@@ -42,11 +42,15 @@ const FriendsButton = () => {
     setError(null);
     
     try {
-      const data = await getFriends();
-      setFriends(data.friends || []);
-      setPendingRequests(data.pending_requests || []);
+      // Récupérer la liste des amis
+      const friendsResponse = await axios.get(`${API_URL}/api/friends/list`);
+      setFriends(friendsResponse.data || []);
+      
+      // Récupérer les demandes d'amis
+      const requestsResponse = await axios.get(`${API_URL}/api/friends/requests`);
+      setPendingRequests(requestsResponse.data || []);
     } catch (err) {
-      setError("Unable to load friends data");
+      setError("Impossible de charger les données des amis");
       console.error(err);
     } finally {
       setLoading(false);
@@ -58,7 +62,7 @@ const FriendsButton = () => {
     e.preventDefault();
     
     if (!newFriendEmail) {
-      setError("Please enter an email address");
+      setError("Veuillez entrer une adresse email");
       return;
     }
     
@@ -67,17 +71,19 @@ const FriendsButton = () => {
     setSuccess(null);
     
     try {
-      await sendFriendRequest(newFriendEmail, newFriendName || null);
-      setSuccess("Request sent successfully");
+      await axios.post(`${API_URL}/api/friends/request`, { 
+        friend_email: newFriendEmail 
+      });
+      setSuccess("Demande envoyée avec succès");
       setNewFriendEmail('');
-      setNewFriendName('');
+      
       // Reload data
       await loadFriendsData();
     } catch (err) {
       if (err.response && err.response.data && err.response.data.detail) {
         setError(err.response.data.detail);
       } else {
-        setError("Error sending request");
+        setError("Erreur lors de l'envoi de la demande");
       }
       console.error(err);
     } finally {
@@ -86,18 +92,22 @@ const FriendsButton = () => {
   };
   
   // Accept friend request
-  const handleAcceptRequest = async (email, name) => {
+  const handleAcceptRequest = async (requestId) => {
     setLoading(true);
     setError(null);
     setSuccess(null);
     
     try {
-      await acceptFriendRequest(email, name);
-      setSuccess("Request accepted");
+      await axios.post(`${API_URL}/api/friends/respond`, {
+        request_id: requestId,
+        status: 'accepted'
+      });
+      setSuccess("Demande acceptée");
+      
       // Reload data
       await loadFriendsData();
     } catch (err) {
-      setError("Error accepting request");
+      setError("Erreur lors de l'acceptation de la demande");
       console.error(err);
     } finally {
       setLoading(false);
@@ -105,18 +115,22 @@ const FriendsButton = () => {
   };
   
   // Reject friend request
-  const handleRejectRequest = async (email) => {
+  const handleRejectRequest = async (requestId) => {
     setLoading(true);
     setError(null);
     setSuccess(null);
     
     try {
-      await rejectFriendRequest(email);
-      setSuccess("Request rejected");
+      await axios.post(`${API_URL}/api/friends/respond`, {
+        request_id: requestId,
+        status: 'rejected'
+      });
+      setSuccess("Demande rejetée");
+      
       // Reload data
       await loadFriendsData();
     } catch (err) {
-      setError("Error rejecting request");
+      setError("Erreur lors du rejet de la demande");
       console.error(err);
     } finally {
       setLoading(false);
@@ -124,8 +138,8 @@ const FriendsButton = () => {
   };
   
   // Remove friend
-  const handleRemoveFriend = async (email) => {
-    if (!window.confirm("Are you sure you want to remove this friend?")) {
+  const handleRemoveFriend = async (friendId) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet ami ?")) {
       return;
     }
     
@@ -134,12 +148,13 @@ const FriendsButton = () => {
     setSuccess(null);
     
     try {
-      await removeFriend(email);
-      setSuccess("Friend removed successfully");
+      await axios.delete(`${API_URL}/api/friends/${friendId}`);
+      setSuccess("Ami supprimé avec succès");
+      
       // Reload data
       await loadFriendsData();
     } catch (err) {
-      setError("Error removing friend");
+      setError("Erreur lors de la suppression de l'ami");
       console.error(err);
     } finally {
       setLoading(false);
@@ -147,18 +162,21 @@ const FriendsButton = () => {
   };
   
   // Enable/disable sharing with a friend
-  const handleToggleSharing = async (email, currentStatus) => {
+  const handleToggleSharing = async (friendId, currentStatus) => {
     setLoading(true);
     setError(null);
     setSuccess(null);
     
     try {
-      await toggleFriendSharing(email, !currentStatus);
-      setSuccess(`Sharing ${!currentStatus ? 'enabled' : 'disabled'}`);
+      await axios.post(`${API_URL}/api/friends/share/${friendId}`, { 
+        share: !currentStatus 
+      });
+      setSuccess(`Partage ${!currentStatus ? 'activé' : 'désactivé'}`);
+      
       // Reload data
       await loadFriendsData();
     } catch (err) {
-      setError("Error changing sharing status");
+      setError("Erreur lors du changement du statut de partage");
       console.error(err);
     } finally {
       setLoading(false);
@@ -184,6 +202,9 @@ const FriendsButton = () => {
     }
   }, [error, success]);
   
+  // Don't render if not authenticated
+  if (!authenticated) return null;
+  
   return (
     <>
       {/* Sticky button */}
@@ -203,7 +224,7 @@ const FriendsButton = () => {
       {/* Side panel */}
       <Offcanvas show={show} onHide={handleClose} placement="end">
         <Offcanvas.Header closeButton>
-          <Offcanvas.Title>Friends Management</Offcanvas.Title>
+          <Offcanvas.Title>Gestion des amis</Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body>
           {/* Navigation between tabs */}
@@ -213,7 +234,7 @@ const FriendsButton = () => {
               onClick={() => handleTabChange('friends')}
               className="me-2"
             >
-              My Friends
+              Mes amis
               {friends.length > 0 && <Badge bg="secondary" className="ms-2">{friends.length}</Badge>}
             </Button>
             <Button 
@@ -222,14 +243,14 @@ const FriendsButton = () => {
               className="me-2"
               disabled={pendingRequests.length === 0}
             >
-              Requests
+              Demandes
               {pendingRequests.length > 0 && <Badge bg="danger" className="ms-2">{pendingRequests.length}</Badge>}
             </Button>
             <Button 
               variant={activeTab === 'add' ? 'primary' : 'outline-primary'} 
               onClick={() => handleTabChange('add')}
             >
-              Add
+              Ajouter
             </Button>
           </div>
           
@@ -249,35 +270,37 @@ const FriendsButton = () => {
             {/* My friends tab */}
             {activeTab === 'friends' && (
               <div>
-                <h5>Your Friends</h5>
+                <h5>Amis ({friends.length})</h5>
                 {friends.length === 0 ? (
-                  <p>You don't have any friends yet.</p>
+                  <p className="text-muted">Vous n'avez pas encore d'amis.</p>
                 ) : (
                   <ListGroup>
                     {friends.map((friend) => (
-                      <ListGroup.Item key={friend.email} className="d-flex justify-content-between align-items-center">
+                      <ListGroup.Item key={friend.id} className="d-flex justify-content-between align-items-center">
                         <div>
-                          <strong>{friend.name || friend.email}</strong>
-                          <div className="text-muted">{friend.email}</div>
+                          <div className="fw-bold">{friend.friend_name || friend.friend_email}</div>
+                          <div className="text-muted small">{friend.friend_email}</div>
                         </div>
                         <div>
-                          <Button
-                            variant="link"
-                            onClick={() => handleToggleSharing(friend.email, friend.sharing_enabled)}
+                          <Button 
+                            variant="link" 
+                            className="me-2 p-0" 
+                            onClick={() => handleToggleSharing(friend.id, friend.share_cache)}
                             disabled={loading}
-                            className="me-2"
-                            title={friend.sharing_enabled ? "Disable sharing" : "Enable sharing"}
                           >
-                            {friend.sharing_enabled ? <FaToggleOn className="text-success" size={20} /> : <FaToggleOff className="text-muted" size={20} />}
+                            {friend.share_cache ? (
+                              <FaToggleOn size={24} className="text-success" title="Désactiver le partage" />
+                            ) : (
+                              <FaToggleOff size={24} className="text-muted" title="Activer le partage" />
+                            )}
                           </Button>
-                          <Button
-                            variant="link"
-                            onClick={() => handleRemoveFriend(friend.email)}
+                          <Button 
+                            variant="link" 
+                            className="p-0 text-danger" 
+                            onClick={() => handleRemoveFriend(friend.id)}
                             disabled={loading}
-                            className="text-danger"
-                            title="Remove"
                           >
-                            <FaTimes />
+                            <FaTimes size={18} title="Supprimer" />
                           </Button>
                         </div>
                       </ListGroup.Item>
@@ -287,37 +310,36 @@ const FriendsButton = () => {
               </div>
             )}
             
-            {/* Requests tab */}
+            {/* Pending requests tab */}
             {activeTab === 'requests' && (
               <div>
-                <h5>Pending Requests</h5>
+                <h5>Demandes en attente ({pendingRequests.length})</h5>
                 {pendingRequests.length === 0 ? (
-                  <p>No pending requests.</p>
+                  <p className="text-muted">Aucune demande en attente.</p>
                 ) : (
                   <ListGroup>
                     {pendingRequests.map((request) => (
-                      <ListGroup.Item key={request.email} className="d-flex justify-content-between align-items-center">
+                      <ListGroup.Item key={request.id} className="d-flex justify-content-between align-items-center">
                         <div>
-                          <strong>{request.name || request.email}</strong>
-                          <div className="text-muted">{request.email}</div>
+                          <div className="fw-bold">{request.sender_name || request.sender_email}</div>
+                          <div className="text-muted small">{request.sender_email}</div>
                         </div>
                         <div>
-                          <Button
-                            variant="success"
-                            size="sm"
-                            onClick={() => handleAcceptRequest(request.email, request.name)}
+                          <Button 
+                            variant="link" 
+                            className="me-2 p-0 text-success" 
+                            onClick={() => handleAcceptRequest(request.id)}
                             disabled={loading}
-                            className="me-2"
                           >
-                            <FaCheck /> Accept
+                            <FaCheck size={18} title="Accepter" />
                           </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => handleRejectRequest(request.email)}
+                          <Button 
+                            variant="link" 
+                            className="p-0 text-danger" 
+                            onClick={() => handleRejectRequest(request.id)}
                             disabled={loading}
                           >
-                            <FaTimes /> Reject
+                            <FaTimes size={18} title="Rejeter" />
                           </Button>
                         </div>
                       </ListGroup.Item>
@@ -327,36 +349,35 @@ const FriendsButton = () => {
               </div>
             )}
             
-            {/* Add tab */}
+            {/* Add friend tab */}
             {activeTab === 'add' && (
               <div>
-                <h5>Add a Friend</h5>
+                <h5>Ajouter un ami</h5>
                 <Form onSubmit={handleSendRequest}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Email *</Form.Label>
-                    <Form.Control
-                      type="email"
+                    <Form.Label>Adresse email</Form.Label>
+                    <Form.Control 
+                      type="email" 
+                      placeholder="ami@example.com" 
                       value={newFriendEmail}
                       onChange={(e) => setNewFriendEmail(e.target.value)}
-                      placeholder="email@example.com"
                       required
                     />
                   </Form.Group>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Name (optional)</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={newFriendName}
-                      onChange={(e) => setNewFriendName(e.target.value)}
-                      placeholder="Friend's name"
-                    />
-                  </Form.Group>
+                  
                   <Button 
+                    type="submit" 
                     variant="primary" 
-                    type="submit"
                     disabled={loading || !newFriendEmail}
+                    className="w-100"
                   >
-                    <FaUserPlus className="me-2" /> Send Request
+                    {loading ? (
+                      <Spinner animation="border" size="sm" />
+                    ) : (
+                      <>
+                        <FaUserPlus className="me-2" /> Envoyer la demande
+                      </>
+                    )}
                   </Button>
                 </Form>
               </div>
