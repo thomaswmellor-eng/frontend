@@ -24,7 +24,17 @@ api.interceptors.response.use(
 export const emailService = {
   // Génération d'emails
   generateEmails: (formData) => {
-    return api.post('/api/emails/generate', formData, {
+    // S'assurer que use_ai est un booléen
+    const useAi = formData.get('use_ai') === 'true';
+    formData.set('use_ai', useAi);
+
+    // S'assurer que template_id est un nombre si présent
+    const templateId = formData.get('template_id');
+    if (templateId) {
+      formData.set('template_id', parseInt(templateId));
+    }
+
+    return api.post('/emails/generate', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -33,55 +43,75 @@ export const emailService = {
 
   // Récupération des emails par stage
   getEmailsByStage: (stage) => {
-    return api.get(`/api/emails/by-stage/${stage}`);
+    return api.get(`/emails/by-stage/${stage}`);
   },
 
   // Mise à jour du statut d'un email
   updateEmailStatus: (emailId, status) => {
-    return api.put(`/api/emails/${emailId}/status`, { status });
+    return api.put(`/emails/${emailId}/status`, { status });
   },
 
   // Mise à jour du stage d'un email
   updateEmailStage: (emailId, stage) => {
-    return api.put(`/api/emails/${emailId}/stage`, { stage });
+    return api.put(`/emails/${emailId}/stage`, { stage });
   },
 
   // Récupération d'informations sur le cache
   getCacheInfo: () => {
-    return api.get('/api/emails/cache');
+    return api.get('/cache/info');
   },
 
-  // Vidage du cache
+  // Nettoyage du cache
   clearCache: () => {
-    return api.delete('/api/emails/cache');
+    return api.delete('/cache/clear');
   },
+
+  // Récupération des templates
+  getTemplates: () => {
+    return api.get('/templates');
+  },
+
+  // Création d'un template
+  createTemplate: (template) => {
+    return api.post('/templates', template);
+  },
+
+  // Mise à jour d'un template
+  updateTemplate: (templateId, template) => {
+    return api.put(`/templates/${templateId}`, template);
+  },
+
+  // Suppression d'un template
+  deleteTemplate: (templateId) => {
+    return api.delete(`/templates/${templateId}`);
+  }
 };
 
 // Service d'API pour les templates
 export const templateService = {
   // Récupération de tous les templates
   getAllTemplates: () => {
-    return api.get('/api/emails/templates');
+    return api.get('/templates');
   },
 
   // Récupération d'un template par ID
   getTemplate: (templateId) => {
-    return api.get(`/api/emails/templates/${templateId}`);
+    return api.get(`/templates/${templateId}`);
   },
 
   // Création d'un nouveau template
   createTemplate: (template) => {
-    return api.post('/api/emails/templates', template);
+    return api.post('/templates', template);
   },
 
   // Mise à jour d'un template
   updateTemplate: (templateId, template) => {
-    return api.put(`/api/emails/templates/${templateId}`, template);
+    return api.put(`/templates/${templateId}`, template);
   },
 
   // Suppression d'un template
   deleteTemplate: (templateId) => {
-    return api.delete(`/api/emails/templates/${templateId}`);
+    return api.delete(`/templates/${templateId}`);
   },
 };
 
@@ -89,37 +119,37 @@ export const templateService = {
 export const friendService = {
   // Envoi d'une demande d'ami
   sendFriendRequest: (email) => {
-    return api.post('/api/friends/request', { email });
+    return api.post('/friends/request', { email });
   },
 
   // Récupération des demandes d'amis
   getFriendRequests: () => {
-    return api.get('/api/friends/requests');
+    return api.get('/friends/requests');
   },
 
   // Réponse à une demande d'ami
   respondToFriendRequest: (requestId, status) => {
-    return api.post('/api/friends/respond', { request_id: requestId, status });
+    return api.post('/friends/respond', { request_id: requestId, status });
   },
 
   // Récupération de la liste des amis
   getFriendsList: () => {
-    return api.get('/api/friends/list');
+    return api.get('/friends/list');
   },
 
   // Activation/désactivation du partage de cache avec un ami
   toggleCacheSharing: (friendId, share) => {
-    return api.post(`/api/friends/share/${friendId}`, { share });
+    return api.post(`/friends/share/${friendId}`, { share });
   },
 
   // Récupération des emails partagés
   getSharedEmails: () => {
-    return api.get('/api/friends/shared-emails');
+    return api.get('/friends/shared-emails');
   },
 
   // Partage d'un email avec les amis
   shareEmail: (email) => {
-    return api.post('/api/friends/share-email', { email });
+    return api.post('/friends/share-email', { email });
   },
 };
 

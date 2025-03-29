@@ -91,13 +91,6 @@ const GenerateEmailsPage = () => {
       if (userProfile.position) formData.append('your_position', userProfile.position);
       if (userProfile.companyName) formData.append('company_name', userProfile.companyName);
       if (userProfile.email) formData.append('your_contact', userProfile.email);
-      
-      console.log('Adding user profile to email generation:', {
-        your_name: userProfile.name,
-        your_position: userProfile.position,
-        company_name: userProfile.companyName,
-        your_contact: userProfile.email
-      });
     }
     
     if (generationMethod === 'template' && selectedTemplate) {
@@ -107,12 +100,16 @@ const GenerateEmailsPage = () => {
     try {
       const response = await emailService.generateEmails(formData);
       
-      setEmails(response.data.emails || []);
-      setActiveTab('preview');
-      setLoading(false);
-      
-      // Recharger les emails après une génération réussie
-      loadEmailsByStage();
+      if (response.data && response.data.emails) {
+        setEmails(response.data.emails);
+        setActiveTab('preview');
+        setLoading(false);
+        
+        // Recharger les emails après une génération réussie
+        loadEmailsByStage();
+      } else {
+        throw new Error('Invalid response format from server');
+      }
     } catch (err) {
       console.error('Error generating emails:', err);
       setError(
