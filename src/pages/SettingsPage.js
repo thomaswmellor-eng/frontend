@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Card, Alert, Spinner } from 'react-bootstrap';
+import { getCacheInfo, clearCache } from '../services/emailApi';
 import { UserContext } from '../contexts/UserContext';
-import { getCacheInfo, clearCache } from '../api/emailApi';
 
 const SettingsPage = () => {
   const { userProfile, updateUserProfile } = useContext(UserContext);
