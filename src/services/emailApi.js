@@ -3,6 +3,14 @@ import axios from 'axios';
 // URL de base de l'API
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
+// Créer une instance axios avec la configuration de base
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 // Points d'entrée API
 const EMAIL_API = `${API_URL}/emails`;
 const FRIENDS_API = `${API_URL}/friends`;
@@ -10,10 +18,15 @@ const FRIENDS_API = `${API_URL}/friends`;
 // Fonction pour générer des emails
 export const generateEmails = async (contactsData, userInfo = null, templateId = null) => {
   try {
-    const response = await axios.post(`${API_URL}/generate-emails`, {
-      contacts: contactsData,
-      user_info: userInfo,
-      template_id: templateId
+    const formData = new FormData();
+    formData.append('contacts', JSON.stringify(contactsData));
+    if (userInfo) formData.append('user_info', JSON.stringify(userInfo));
+    if (templateId) formData.append('template_id', templateId);
+
+    const response = await api.post('/emails/generate', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
     return response.data;
   } catch (error) {
@@ -25,7 +38,7 @@ export const generateEmails = async (contactsData, userInfo = null, templateId =
 // Fonction pour obtenir les templates
 export const getTemplates = async () => {
   try {
-    const response = await axios.get(`${API_URL}/templates`);
+    const response = await api.get('/templates');
     return response.data;
   } catch (error) {
     console.error('Error fetching templates:', error);
@@ -35,7 +48,7 @@ export const getTemplates = async () => {
 
 export const saveTemplate = async (template) => {
   try {
-    const response = await axios.post(`${API_URL}/templates`, template);
+    const response = await api.post('/templates', template);
     return response.data;
   } catch (error) {
     console.error('Error saving template:', error);
@@ -45,7 +58,7 @@ export const saveTemplate = async (template) => {
 
 export const deleteTemplate = async (templateId) => {
   try {
-    const response = await axios.delete(`${API_URL}/templates/${templateId}`);
+    const response = await api.delete(`/templates/${templateId}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting template:', error);
@@ -55,7 +68,7 @@ export const deleteTemplate = async (templateId) => {
 
 export const getCacheInfo = async () => {
   try {
-    const response = await axios.get(`${API_URL}/cache`);
+    const response = await api.get('/cache/info');
     return response.data;
   } catch (error) {
     console.error('Error fetching cache info:', error);
@@ -65,7 +78,7 @@ export const getCacheInfo = async () => {
 
 export const clearCache = async () => {
   try {
-    const response = await axios.delete(`${API_URL}/cache`);
+    const response = await api.delete('/cache/clear');
     return response.data;
   } catch (error) {
     console.error('Error clearing cache:', error);
@@ -78,7 +91,7 @@ export const clearCache = async () => {
 // Récupérer la liste des amis et des demandes
 export const getFriends = async () => {
   try {
-    const response = await axios.get(`${API_URL}/friends`);
+    const response = await api.get('/friends/list');
     return response.data;
   } catch (error) {
     console.error('Error fetching friends:', error);
@@ -89,7 +102,7 @@ export const getFriends = async () => {
 // Envoyer une demande d'ami
 export const sendFriendRequest = async (email, name = null) => {
   try {
-    const response = await axios.post(`${API_URL}/friends/request`, { 
+    const response = await api.post('/friends/request', { 
       friend_email: email,
       name: name 
     });
@@ -103,7 +116,8 @@ export const sendFriendRequest = async (email, name = null) => {
 // Accepter une demande d'ami
 export const acceptFriendRequest = async (email) => {
   try {
-    const response = await axios.put(`${API_URL}/friends/request/${encodeURIComponent(email)}`, {
+    const response = await api.post('/friends/respond', {
+      request_id: email,
       status: 'accepted'
     });
     return response.data;
@@ -116,7 +130,8 @@ export const acceptFriendRequest = async (email) => {
 // Rejeter une demande d'ami
 export const rejectFriendRequest = async (email) => {
   try {
-    const response = await axios.put(`${API_URL}/friends/request/${encodeURIComponent(email)}`, {
+    const response = await api.post('/friends/respond', {
+      request_id: email,
       status: 'rejected'
     });
     return response.data;
@@ -129,7 +144,7 @@ export const rejectFriendRequest = async (email) => {
 // Supprimer un ami
 export const removeFriend = async (email) => {
   try {
-    const response = await axios.delete(`${API_URL}/friends/${encodeURIComponent(email)}`);
+    const response = await api.delete(`/friends/${encodeURIComponent(email)}`);
     return response.data;
   } catch (error) {
     console.error('Error removing friend:', error);
@@ -140,8 +155,8 @@ export const removeFriend = async (email) => {
 // Activer/désactiver le partage avec un ami
 export const toggleFriendSharing = async (email, sharingEnabled) => {
   try {
-    const response = await axios.put(`${API_URL}/friends/${encodeURIComponent(email)}/sharing`, {
-      sharing_enabled: sharingEnabled
+    const response = await api.post(`/friends/share/${encodeURIComponent(email)}`, {
+      share: sharingEnabled
     });
     return response.data;
   } catch (error) {
@@ -152,7 +167,7 @@ export const toggleFriendSharing = async (email, sharingEnabled) => {
 
 export const getSharedEmails = async () => {
   try {
-    const response = await axios.get(`${API_URL}/shared-emails`);
+    const response = await api.get('/friends/shared-emails');
     return response.data;
   } catch (error) {
     console.error('Error fetching shared emails:', error);
