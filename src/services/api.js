@@ -34,7 +34,7 @@ export const emailService = {
       formData.set('template_id', parseInt(templateId));
     }
 
-    return api.post('/emails/generate', formData, {
+    return api.post('/api/emails/generate', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -43,47 +43,47 @@ export const emailService = {
 
   // Récupération des emails par stage
   getEmailsByStage: (stage) => {
-    return api.get(`/emails/by-stage/${stage}`);
+    return api.get(`/api/emails/by-stage/${stage}`);
   },
 
   // Mise à jour du statut d'un email
   updateEmailStatus: (emailId, status) => {
-    return api.put(`/emails/${emailId}/status`, { status });
+    return api.put(`/api/emails/${emailId}/status`, { status });
   },
 
   // Mise à jour du stage d'un email
   updateEmailStage: (emailId, stage) => {
-    return api.put(`/emails/${emailId}/stage`, { stage });
+    return api.put(`/api/emails/${emailId}/stage`, { stage });
   },
 
   // Récupération d'informations sur le cache
   getCacheInfo: () => {
-    return api.get('/cache/info');
+    return api.get('/api/emails/cache');
   },
 
   // Nettoyage du cache
   clearCache: () => {
-    return api.delete('/cache/clear');
+    return api.delete('/api/emails/cache');
   },
 
   // Récupération des templates
   getTemplates: () => {
-    return api.get('/templates');
+    return api.get('/api/templates');
   },
 
   // Création d'un template
   createTemplate: (template) => {
-    return api.post('/templates', template);
+    return api.post('/api/templates', template);
   },
 
   // Mise à jour d'un template
   updateTemplate: (templateId, template) => {
-    return api.put(`/templates/${templateId}`, template);
+    return api.put(`/api/templates/${templateId}`, template);
   },
 
   // Suppression d'un template
   deleteTemplate: (templateId) => {
-    return api.delete(`/templates/${templateId}`);
+    return api.delete(`/api/templates/${templateId}`);
   }
 };
 

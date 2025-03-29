@@ -23,7 +23,7 @@ export const generateEmails = async (contactsData, userInfo = null, templateId =
     if (userInfo) formData.append('user_info', JSON.stringify(userInfo));
     if (templateId) formData.append('template_id', templateId);
 
-    const response = await api.post('/emails/generate', formData, {
+    const response = await api.post('/api/emails/generate', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -38,7 +38,7 @@ export const generateEmails = async (contactsData, userInfo = null, templateId =
 // Fonction pour obtenir les templates
 export const getTemplates = async () => {
   try {
-    const response = await api.get('/templates');
+    const response = await api.get('/api/templates');
     return response.data;
   } catch (error) {
     console.error('Error fetching templates:', error);
@@ -48,7 +48,7 @@ export const getTemplates = async () => {
 
 export const saveTemplate = async (template) => {
   try {
-    const response = await api.post('/templates', template);
+    const response = await api.post('/api/templates', template);
     return response.data;
   } catch (error) {
     console.error('Error saving template:', error);
@@ -58,7 +58,7 @@ export const saveTemplate = async (template) => {
 
 export const deleteTemplate = async (templateId) => {
   try {
-    const response = await api.delete(`/templates/${templateId}`);
+    const response = await api.delete(`/api/templates/${templateId}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting template:', error);
@@ -68,7 +68,7 @@ export const deleteTemplate = async (templateId) => {
 
 export const getCacheInfo = async () => {
   try {
-    const response = await api.get('/cache/info');
+    const response = await api.get('/api/emails/cache');
     return response.data;
   } catch (error) {
     console.error('Error fetching cache info:', error);
@@ -78,7 +78,7 @@ export const getCacheInfo = async () => {
 
 export const clearCache = async () => {
   try {
-    const response = await api.delete('/cache/clear');
+    const response = await api.delete('/api/emails/cache');
     return response.data;
   } catch (error) {
     console.error('Error clearing cache:', error);
