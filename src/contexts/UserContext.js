@@ -97,6 +97,7 @@ export const UserProvider = ({ children }) => {
         loading,
         authenticated,
         authStep,
+        setAuthStep,
         requestAuthCode,
         verifyAuthCode
       }}

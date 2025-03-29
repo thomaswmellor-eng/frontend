@@ -3,14 +3,22 @@ import { Container, Card, Form, Button, Alert, Col, Row } from 'react-bootstrap'
 import { UserContext } from '../contexts/UserContext';
 
 const AuthScreen = () => {
-  const { userProfile, authStep, requestAuthCode, verifyAuthCode } = useContext(UserContext);
+  const { userProfile, authStep, setAuthStep, requestAuthCode, verifyAuthCode } = useContext(UserContext);
   
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [codeInputs, setCodeInputs] = useState(['', '', '', '', '', '']);
-  const codeRefs = Array(6).fill(0).map(() => useRef(null));
+  
+  // Initialiser les refs pour les champs de code (hors du callback)
+  const codeRef1 = useRef(null);
+  const codeRef2 = useRef(null);
+  const codeRef3 = useRef(null);
+  const codeRef4 = useRef(null);
+  const codeRef5 = useRef(null);
+  const codeRef6 = useRef(null);
+  const codeRefs = [codeRef1, codeRef2, codeRef3, codeRef4, codeRef5, codeRef6];
   
   // Si on est à l'étape du code, récupérer l'email du profil
   useEffect(() => {
